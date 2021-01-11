@@ -1,0 +1,39 @@
+library(pROC)
+library(caret)
+library(e1071)
+data <- read.csv(file.choose(), header = TRUE)
+#removing customer ID from data as not required for classification
+data<-data[c(2:ncol(data))]
+
+str(data)
+#
+ind<-sample(2,nrow(data),replace = TRUE,prob = c(0.75,0.25))
+train<-data[ind==1,]
+test<-data[ind==2,]
+train
+library(randomForest)
+#omit for remove NA values
+#only 11 rows needed to omit as it will not affect classification
+cleanData=na.omit(data)
+#testing of na values by counting all NA value
+#value will be zero after omit function
+sum(is.na(cleanData))
+
+#building model using random forest
+model<-randomForest(Churn~.,data=cleanData,
+                    ntree = 100,
+                    mtry = 4,
+                    importance = TRUE)
+
+#for fine tune the model and decide number of ntrees required
+plot(model)
+#to decide number of mtry required for better result
+tuneRF(cleanData[,c(1:19)],cleanData[,20],stepFactor = 1,plot=T,ntree=100,trace = T,improve = 0.5)
+
+predict<-predict(model,test,type="class")
+
+str(model)
+summary(model)
+
+confusionMatrix(predict,test$Churn)
+
